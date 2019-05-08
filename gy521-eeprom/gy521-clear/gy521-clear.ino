@@ -7,6 +7,7 @@
 #include <EEPROM.h>
 
 void setup() {
+  Serial.begin(9600);
   EEPROM.begin(512);
 
   //Write a 0 to all 512 bytes of the EEPROM
@@ -15,9 +16,9 @@ void setup() {
   }
 
   //Print "OK CLEAR" when it's done
-  Serial.print();
-  Serial.print("OK CLEAR");
-  Serial.print();
+  Serial.println();
+  Serial.println("OK CLEAR");
+  Serial.println();
 }
 
 void loop() {
