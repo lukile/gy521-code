@@ -7,6 +7,8 @@
 #define SDA 33
 #define SCL 32
 
+
+
 struct Accelerometer {
   int16_t ax;
   int16_t ay;
@@ -22,26 +24,22 @@ int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
 byte value;
 int iterator = 0;
 int addr = 0;
+int addressGet = 0;
 byte tracker = 0;
 byte t = 0;
 Accelerometer savedDatas[3];
+Accelerometer acc;
 
 void setup(){
+  Serial.begin(9600);
   Wire.begin(SDA, SCL);
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x6B);  // PWR_MGMT_1 register
   Wire.write(0);     // set to zero (wakes up the MPU-6050)
   Wire.endTransmission(true);
-
-  
-  
-  Serial.begin(9600);
   EEPROM.begin(512);
-}
-void loop(){
-  
-  Accelerometer acc;
-  Wire.beginTransmission(MPU_addr);
+
+    Wire.beginTransmission(MPU_addr);
   Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
   Wire.endTransmission(false);
   Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
@@ -60,7 +58,6 @@ void loop(){
   acc.gx = GyX;
   acc.gy = GyY;
   acc.gz = GyZ;
-
   /*Serial.print("AcX = "); Serial.print(acc.ax);
   Serial.print(" | AcY = "); Serial.print(acc.ay);
   Serial.print(" | AcZ = "); Serial.print(acc.az);
@@ -69,18 +66,45 @@ void loop(){
   Serial.print(" | GyY = "); Serial.print(acc.gy);
   Serial.print(" | GyZ = "); Serial.println(acc.gz);*/
 
-  acc = {acc.ax, acc.ay, acc.az, acc.temperature, acc.gx, acc.gy, acc.gz};
+  
+  //Serial.print(" acc.ax : ");Serial.println(acc.ax);
+  //Serial.print(" acc.ay : ");Serial.println(acc.ay);
 
-  tracker = EEPROM_writeAnything(0,acc);
 
-  Serial.print("eeprom write anything : ");Serial.print(tracker,DEC);
+  //addr += sizeof(float);
+  //EEPROM.put(addr, acc);
+  //EEPROM.commit();
+
+  //Serial.print(" ax : ");Serial.println(acc.ax);
+  //Serial.print(" ay : ");Serial.println(acc.ay);
+
+
+
+  //clear();
+
+
+  Accelerometer acc2;
+  EEPROM.get(addr, acc2);
+
+  Serial.print(" ax : ");Serial.println(acc2.ax);
+  Serial.print(" ay : ");Serial.println(acc2.ay);
+  
+
+  //clear();
+}
+void loop(){
+  
+
+
+  
+  /*Serial.print("eeprom write anything : ");Serial.print(tracker,DEC);
   Serial.println();
   Serial.print("ax value : ");Serial.print(acc.ax,DEC);
   Serial.println();
   acc.ax = 0;
   Serial.println(acc.ax,DEC);
 
-  t = EEPROM_readAnything(0,acc);
+  //t = EEPROM_readAnything(0,acc);
   Serial.println(t,DEC);
   
   
@@ -103,10 +127,10 @@ void loop(){
   //Serial.println();
 
   delay(1000);
- // clear();
+ // clear();*/
 }
 void clear() {
-   for(int i = 0; i < 512; i++) {
+   for(int i = 0; i < EEPROM.length(); i++) {
     EEPROM.write(i, 0);
   }
 
