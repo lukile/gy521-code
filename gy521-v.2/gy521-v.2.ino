@@ -51,36 +51,33 @@ void setup(){
   GyY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
   GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
 
-  Serial.println();
-  Serial.println(AcX);
-  Serial.println(AcY);
- 
-  acc.ax = AcX;
-  acc.ay = AcY;
-  acc.az = AcZ;
-  acc.temperature = Tmp/340.00+36.53;
-  acc.gx = GyX;
-  acc.gy = GyY;
-  acc.gz = GyZ;
-  /*Serial.print("AcX = "); Serial.print(acc.ax);
-  Serial.print(" | AcY = "); Serial.print(acc.ay);
-  Serial.print(" | AcZ = "); Serial.print(acc.az);
-  Serial.print(" | Tmp = "); Serial.print(acc.temperature);  //equation for temperature in degrees C from datasheet
-  Serial.print(" | GyX = "); Serial.print(acc.gx);
-  Serial.print(" | GyY = "); Serial.print(acc.gy);
-  Serial.print(" | GyZ = "); Serial.println(acc.gz);*/
+  for(int i = 0; i < sizeof(savedDatas)/sizeof(savedDatas[0]); i++) {
+    acc.ax = AcX;
+    acc.ay = AcY;
+    acc.az = AcZ;
+    acc.temperature = Tmp;
+    acc.gx = GyX;
+    acc.gy = GyY;
+    acc.gz = GyZ;
 
+    savedDatas[i] = acc;
+  }
 
-  //addr += sizeof(float);
-  EEPROM.put(addr, acc);
+  EEPROM.put(addr, savedDatas);
   EEPROM.commit();
 
-  Accelerometer acc2;
-  EEPROM.get(addr, acc2);
-
-  Serial.print(" ax : ");Serial.println(acc2.ax);
-  Serial.print(" ay : ");Serial.println(acc2.ay);
+  Accelerometer getSavedDatas[3];
   
+  EEPROM.get(addr, getSavedDatas);
+
+  Serial.println();
+  Serial.print(" getSavedDatas ax : ");Serial.println(getSavedDatas[0].ax);
+  Serial.print(" getSavedDatas ay : ");Serial.println(getSavedDatas[0].ay);
+  Serial.print(" getSavedDatas az : ");Serial.println(getSavedDatas[0].az);
+  Serial.print(" getSavedDatas temp : ");Serial.println(getSavedDatas[0].temperature);
+  Serial.print(" getSavedDatas gx : ");Serial.println(getSavedDatas[0].gx);
+  Serial.print(" getSavedDatas gy : ");Serial.println(getSavedDatas[0].gy);
+  Serial.print(" getSavedDatas gz : ");Serial.println(getSavedDatas[0].gz);
 
   //clear();
 }
