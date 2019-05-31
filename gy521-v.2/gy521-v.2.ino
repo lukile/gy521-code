@@ -3,11 +3,8 @@
 #include<Wire.h>
 #include <array>
 #include <EEPROM.h>
-#include "EEPROMAnything.h"
 #define SDA 33
 #define SCL 32
-
-
 
 struct Accelerometer {
   int16_t ax;
@@ -21,11 +18,8 @@ struct Accelerometer {
 
 const int MPU_addr=0x68;  // I2C address of the MPU-6050
 int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
-byte value;
 int iterator = 0;
 int addr = 0;
-byte tracker = 0;
-byte t = 0;
 Accelerometer savedDatas[292];
 Accelerometer getSavedDatas[292];
 
@@ -117,7 +111,7 @@ void loop(){
   delay(1000);
 }
 void clear() {
-   for(int i = 0; i < EEPROM.length(); i++) {
+   for(int i = 0; i < 4096; i++) {
     EEPROM.write(i, 0);
   }
 
