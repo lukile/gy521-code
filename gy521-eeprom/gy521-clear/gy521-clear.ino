@@ -8,10 +8,10 @@
 
 void setup() {
   Serial.begin(9600);
-  EEPROM.begin(512);
+  EEPROM.begin(4096);
 
-  //Write a 0 to all 512 bytes of the EEPROM
-  for(int i = 0; i < 512; i++) {
+  //Write a 0 to all length of the EEPROM
+ for(int i = 0; i < 4096; i++) {
     EEPROM.write(i, 0);
   }
 

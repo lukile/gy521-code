@@ -26,8 +26,8 @@ int iterator = 0;
 int addr = 0;
 byte tracker = 0;
 byte t = 0;
-Accelerometer savedDatas[3];
-Accelerometer getSavedDatas[3];
+Accelerometer savedDatas[292];
+Accelerometer getSavedDatas[292];
 
 
 void setup(){
@@ -37,7 +37,7 @@ void setup(){
   Wire.write(0x6B);  // PWR_MGMT_1 register
   Wire.write(0);     // set to zero (wakes up the MPU-6050)
   Wire.endTransmission(true);
-  EEPROM.begin(512);
+  EEPROM.begin(4096);
   
   EEPROM.get(addr, getSavedDatas);
 
@@ -53,25 +53,25 @@ void setup(){
 
   
   Serial.println();
-  Serial.print(" getSavedDatas ax 2: ");Serial.println(getSavedDatas[1].ax);
-  Serial.print(" getSavedDatas ay 2: ");Serial.println(getSavedDatas[1].ay);
-  Serial.print(" getSavedDatas az 2: ");Serial.println(getSavedDatas[1].az);
-  Serial.print(" getSavedDatas temp 2: ");Serial.println(getSavedDatas[1].temperature);
-  Serial.print(" getSavedDatas gx 2: ");Serial.println(getSavedDatas[1].gx);
-  Serial.print(" getSavedDatas gy 2: ");Serial.println(getSavedDatas[1].gy);
-  Serial.print(" getSavedDatas gz 2: ");Serial.println(getSavedDatas[1].gz);
+  Serial.print(" getSavedDatas ax 2: ");Serial.println(getSavedDatas[30].ax);
+  Serial.print(" getSavedDatas ay 2: ");Serial.println(getSavedDatas[30].ay);
+  Serial.print(" getSavedDatas az 2: ");Serial.println(getSavedDatas[30].az);
+  Serial.print(" getSavedDatas temp 2: ");Serial.println(getSavedDatas[30].temperature);
+  Serial.print(" getSavedDatas gx 2: ");Serial.println(getSavedDatas[30].gx);
+  Serial.print(" getSavedDatas gy 2: ");Serial.println(getSavedDatas[30].gy);
+  Serial.print(" getSavedDatas gz 2: ");Serial.println(getSavedDatas[30].gz);
 
 
 
   
   Serial.println();
-  Serial.print(" getSavedDatas ax 3: ");Serial.println(getSavedDatas[2].ax);
-  Serial.print(" getSavedDatas ay 3: ");Serial.println(getSavedDatas[2].ay);
-  Serial.print(" getSavedDatas az 3: ");Serial.println(getSavedDatas[2].az);
-  Serial.print(" getSavedDatas temp 3: ");Serial.println(getSavedDatas[2].temperature);
-  Serial.print(" getSavedDatas gx 3: ");Serial.println(getSavedDatas[2].gx);
-  Serial.print(" getSavedDatas gy 3: ");Serial.println(getSavedDatas[2].gy);
-  Serial.print(" getSavedDatas gz 3: ");Serial.println(getSavedDatas[2].gz);
+  Serial.print(" getSavedDatas ax 3: ");Serial.println(getSavedDatas[60].ax);
+  Serial.print(" getSavedDatas ay 3: ");Serial.println(getSavedDatas[60].ay);
+  Serial.print(" getSavedDatas az 3: ");Serial.println(getSavedDatas[60].az);
+  Serial.print(" getSavedDatas temp 3: ");Serial.println(getSavedDatas[60].temperature);
+  Serial.print(" getSavedDatas gx 3: ");Serial.println(getSavedDatas[60].gx);
+  Serial.print(" getSavedDatas gy 3: ");Serial.println(getSavedDatas[60].gy);
+  Serial.print(" getSavedDatas gz 3: ");Serial.println(getSavedDatas[60].gz);
   //clear();
 }
 void loop(){
@@ -114,7 +114,7 @@ void loop(){
 
   iterator++;
  
-  delay(9000);
+  delay(1000);
 }
 void clear() {
    for(int i = 0; i < EEPROM.length(); i++) {
