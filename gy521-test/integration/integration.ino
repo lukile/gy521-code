@@ -63,7 +63,7 @@ void calculSpeed(){
   
   currentTime = (firstTime-millis());
   meterPerSecond = ((AcX * sensitivityScaleFactor)/1000)*currentTime; //Get total x in m/s
-  Serial.print("meterPerSecondSquared : ");Serial.println(meterPerSecondSquared);
+  Serial.print("meterPerSecondSquared : ");Serial.println(meterPerSecond);
   savedDatas[iterator] = meterPerSecond;
   iterator++;
   delay(1000);
