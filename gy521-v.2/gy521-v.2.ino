@@ -40,8 +40,8 @@ float savedDatas[3000];
 char jsonTest;
 
 
-const char* ssid = "under-wifi";
-const char* password = "4F3EC76435781E341151852682";
+const char* ssid = "ssid";
+const char* password = "password";
 
 void setup(){
   Serial.begin(9600);
@@ -109,7 +109,7 @@ void sendToApi(float meterPerSecond) {
     HTTPClient http;
 
     //Change
-    http.begin("192.168.1.18:3000/performances/");
+    http.begin("localhost:3000/performances/");
     http.addHeader("Content-Type", "application/json");
 
     int httpCode = http.POST("{\"performance\" : {\"datePerformance\" : \"1555000960\",\"speed\" : 76,\"lengthType\" : 25,\"startTime\" : \"1555000960\",\"endTime\" : \"1555000960\",\"distance\" : 200,\"lostWeight\" : 47,\"programType\" : {\"_id\": \"5d0e7b075f1af2c6b6b1a00c\"},\"user\" : \"5d0e60621bdcd81d4236e2bc\"}}");
