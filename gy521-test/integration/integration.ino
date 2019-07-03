@@ -12,7 +12,7 @@ struct Accelerometer {
   int16_t ax;
 };
 
-const int MPU_addr=0x68;  // I2C address of the MPU-6050
+const int MPU_addr=0x68; // I2C address of the MPU-6050
 int16_t AcX;
 float meterPerSecond;
 float sensitivityScaleFactor = 0.49;
