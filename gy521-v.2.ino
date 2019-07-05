@@ -1,5 +1,3 @@
-#include <ArduinoJson.h>
-
 #include <MPU6050_tockn.h>
 
 #include <SPI.h>
@@ -20,6 +18,7 @@
 #include <WiFiAP.h>
 #include <WiFiGeneric.h>
 #include <WiFi.h>
+#include <string>
 
 #define SDA 33
 #define SCL 32
@@ -40,8 +39,6 @@ SEND TO API AT THE END (update) :
   endTime -> compute chronos program at the end of session and stock result 
 
 lostWeight?
-
-Define a session and a deviceId in app
  
 */
 
@@ -50,6 +47,7 @@ MPU6050 mpu6050(Wire);
 
 
 int iterator = 0;
+char jsonTest;
 
 long timer = 0;
 long timerStartSession = 0;
@@ -71,15 +69,8 @@ String user;
 String lengthType;
 String programType;
 
-
-const char* ssid = "ssid";
+const char* ssid = "ssid";  
 const char* password = "pass";
-
-int addr = 0;
-float savedDatas[3000];
-char jsonTest;
-
-
 
 void setup(){
   Serial.begin(9600);
@@ -88,7 +79,6 @@ void setup(){
   mpu6050.begin();
   mpu6050.calcGyroOffsets(true);
   timerStartSession = millis();
-  
   
   WiFi.begin(ssid, password);
   Serial.print("Connecting\n");
@@ -99,11 +89,17 @@ void setup(){
   
   Serial.println();
 
-  Serial.print("Connected, IP address: \n");
+  Serial.print("Connected, IP address: ");
   Serial.println(WiFi.localIP()); 
 
-  getBeginningDatasFromApi(345);
+  user = getCurrentUserFromApi();
+  programType = getprogramTypeFromApi();
+  lengthType = getLengthTypeFromApi();
 
+  Serial.print("user : ");Serial.print(user);Serial.println();
+  Serial.print("programType : ");Serial.print(programType);Serial.println();
+  Serial.print("lengthType : ");Serial.print(lengthType);Serial.println(); 
+  
   sleep(50);
 }
 
@@ -112,27 +108,26 @@ void loop(){
   Serial.print("endSession : ");Serial.print(endSession);Serial.print("\n");
 
   mpu6050.update();
-  if(mpu6050.getAccX() > minimalHighAccX || mpu6050.getAccX() < minimalLowAccX) {
+  if(mpu6050.getAccX() > minimalHighAccX || mpu6050.getAccX() > minimalLowAccX) {
     Serial.print("accX > 0.20: "); Serial.print(mpu6050.getAccX());
     Serial.println("==================================================\n");
     timer = millis();
  
-    currentV = previousV + mpu6050.getAccX()* 9.8 * 0.05;
+    currentV = previousV + mpu6050.getAccX()* 9.8 * 0.5;
     currentX = previousX + currentV * 0.05;
     previousV = currentV;
     previousX = currentX;
     arraySpeeds[cpt] = currentV;
-
   
     Serial.print("vitesse : ");Serial.print(currentV);Serial.print("m/s\n");
     cpt += 1;
   
     if(cpt >= 100 && currentV > 0) {
       averageSpeed = averageArray(arraySpeeds, cpt);
-      distance = currentV * ((millis() - timerStartSession)/1000);
+      distance = (millis() - timerStartSession)/1000);
       
       Serial.print("\nvitesse moyenne : ");Serial.print(currentV);Serial.print("m/s\n");
-      Serial.print("Distance moyenne : ");Serial.print(distance); Serial.print("m\n");
+      Serial.print("Distance moyenne : ");Serial.print(currentV * (distance); Serial.print("m\n");
     }
   }
   delay(50);
@@ -149,8 +144,6 @@ double averageArray(double *array, int arraySize) {
 }
 
 String getCurrentUserFromApi() {
-    StaticJsonDocument<600> doc;
-
   String userIdField = "\"user\" : ";
 
   if(WiFi.status() == WL_CONNECTED) {
@@ -158,15 +151,8 @@ String getCurrentUserFromApi() {
 
     http.begin("http://192.168.1.18:3000/users");
 
-    
-
     int httpCode = http.GET();
     String payload = http.getString();
-
-    DeserializationError error = deserializeJson(doc, payload);
-
-    const char* lengthT = doc["lengthType"];
-
 
     String completeUserField = userIdField + payload;
     
@@ -174,39 +160,41 @@ String getCurrentUserFromApi() {
   }
 }
 
-String getBeginningDatasFromApi(int deviceId) {
-  StaticJsonDocument<600> doc;
+String getLengthTypeFromApi() {
+  String lengthTypefield = "\"lengthType\" : ";
 
   if(WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
 
-    http.begin("http://192.168.1.18:3000/performances/device/" + (String)deviceId);
+    http.begin("http://192.168.1.18:3000/performances");
 
     int httpCode = http.GET();
     String payload = http.getString();
 
-    DynamicJsonDocument doc(1024);
-
-    DeserializationError error = deserializeJson(doc, payload);
-
-    if (error) {
-      Serial.print(error.c_str());
-      return "error";
-    }
-
-    String lengthType = doc["data"]["performances"][0]["lengthType"];
-    String programType = doc["data"]["performances"][0]["programType"];
-    double session = doc["data"]["performances"][0]["session"];
-
-    String datas = "lengthType : " + lengthType + ", programType : " + programType + ", session : " + session;
-
-    Serial.print("dats : ");  Serial.println(datas);
-
-    return datas;
+    String completeLengthTypeField = lengthTypefield + payload;
+    
+    return completeLengthTypeField;
   }
 }
 
-void sendToApi() {
+String getprogramTypeFromApi() {
+    String programTypeField = "\"programType\" : {\"_id\": ";
+
+    if(WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+
+    http.begin("http://192.168.1.18:3000/programs");
+
+    int httpCode = http.GET();
+    String payload = http.getString();
+
+    String completeProgramTypeField = programTypeField + payload;
+    
+    return completeProgramTypeField;
+  }
+}
+
+void sendToApi(averageSpeed, distance, user, lengthType, programType) {
   if(WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
 
@@ -225,13 +213,4 @@ void sendToApi() {
   } else {
     Serial.println("Error in WiFi connection");
   }
-
-  if(iterator == 10) {
-   // sendToApi(meterPerSecondSquared);
-    sleep(50);
-  }
-
-  iterator++;
- 
-  delay(1000);
 }
