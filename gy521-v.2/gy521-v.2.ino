@@ -4,6 +4,8 @@
 
 #include <SPI.h>
 
+#include <time.h>
+
 #include<Wire.h>
 #include <array>
 
@@ -67,13 +69,14 @@ double averageSpeed = 0;
 float minimalHighAccX = 0.20;
 float minimalLowAccX = -0.20;
 
-String user;
-String lengthType;
-String programType;
+String datas;
 
+String dateTime;
+String startTime;
+String endTime;
 
-const char* ssid = "ssid";
-const char* password = "pass";
+const char* ssid = "under-wifi";
+const char* password = "4F3EC76435781E341151852682";
 
 int addr = 0;
 float savedDatas[3000];
@@ -89,7 +92,7 @@ void setup(){
   mpu6050.calcGyroOffsets(true);
   timerStartSession = millis();
   
-  
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   Serial.print("Connecting\n");
   while (WiFi.status() != WL_CONNECTED) {
@@ -99,15 +102,24 @@ void setup(){
   
   Serial.println();
 
+  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+
+  
   Serial.print("Connected, IP address: \n");
   Serial.println(WiFi.localIP()); 
 
-  getBeginningDatasFromApi(345);
+  datas = getBeginningDatasFromApi(345);
 
-  sleep(50);
+  sleep(20);
 }
 
 void loop(){
+
+  if(cpt == 0) {
+    dateTime = getCurrentDate();
+    startTime = getCurrentTime();
+  }
+  
   Serial.print("cpt : ");Serial.print(cpt);Serial.print("\n");
   Serial.print("endSession : ");Serial.print(endSession);Serial.print("\n");
 
@@ -127,17 +139,19 @@ void loop(){
     Serial.print("vitesse : ");Serial.print(currentV);Serial.print("m/s\n");
     cpt += 1;
   
-    if(cpt >= 100 && currentV > 0) {
+    if(cpt >= 20) {
       averageSpeed = averageArray(arraySpeeds, cpt);
       distance = currentV * ((millis() - timerStartSession)/1000);
       
       Serial.print("\nvitesse moyenne : ");Serial.print(currentV);Serial.print("m/s\n");
       Serial.print("Distance moyenne : ");Serial.print(distance); Serial.print("m\n");
+
+      endTime = getCurrentTime();
+      sendToApi(datas, dateTime, startTime, averageSpeed, distance, endTime);
+      sleep(50);
     }
   }
   delay(50);
-
- 
 }
 
 double averageArray(double *array, int arraySize) {
@@ -197,21 +211,36 @@ String getBeginningDatasFromApi(int deviceId) {
     String lengthType = doc["data"]["performances"][0]["lengthType"];
     String programType = doc["data"]["performances"][0]["programType"];
     double session = doc["data"]["performances"][0]["session"];
+    String userId = doc["data"]["performances"][0]["user"];
 
-    String datas = "lengthType : " + lengthType + ", programType : " + programType + ", session : " + session;
+    datas = "lengthType : " + lengthType + ", programType : " + programType + ", session : " + session + ", deviceId : "+ deviceId + ", userId : " + userId;
 
-    Serial.print("dats : ");  Serial.println(datas);
+    //Serial.print("datePerf : ");  Serial.println(datas);
 
     return datas;
   }
 }
 
-void sendToApi() {
-  if(WiFi.status() == WL_CONNECTED) {
+void sendToApi(String datas, String dateTime, String startTime, double averageSpeed, double distance, String endTime) {
     HTTPClient http;
 
+    Serial.print("datas : ");Serial.print(datas);
+    Serial.println();
+    Serial.print("dateTime : ");Serial.print(dateTime);
+    Serial.println();
+    Serial.print("startTime : ");Serial.print(startTime);
+    Serial.println();
+    Serial.print("averageSpeed : ");Serial.print(averageSpeed);
+    Serial.println();
+    Serial.print("distance : ");Serial.print(distance);
+    Serial.println();
+    Serial.print("endTime : ");Serial.print(endTime);
+    Serial.println();
+
+
+
     //Change
-    http.begin("http://192.168.1.18:3000/performances");
+   /* http.begin("http://192.168.1.18:3000/performances");
     http.addHeader("Content-Type", "application/json");
 
     int httpCode = http.POST("{\"performance\" : {\"datePerformance\" : \"1555000960\",\"speed\" : 76,\"lengthType\" : 26,\"startTime\" : \"1555000960\",\"endTime\" : \"1555000960\",\"distance\" : 200,\"lostWeight\" : 47,\"programType\" : {\"_id\": \"5d0e7b075f1af2c6b6b1a00c\"},\"user\" : \"5d0e60621bdcd81d4236e2bc\"}}");
@@ -220,18 +249,93 @@ void sendToApi() {
     Serial.println(httpCode);
     Serial.println(payload);
 
-    http.end();
+    http.end();*/
   
-  } else {
-    Serial.println("Error in WiFi connection");
-  }
 
-  if(iterator == 10) {
-   // sendToApi(meterPerSecondSquared);
-    sleep(50);
-  }
-
-  iterator++;
  
   delay(1000);
+}
+
+String getCurrentDate() {
+  struct tm* localTime = getLocalDateTime();
+  String zero = "0";
+  String date;
+
+  if(localTime->tm_mday < 10 && localTime->tm_mon < 10) {
+    date = zero + "" + ((String)localTime->tm_mday) + " " + zero + "" + ((String)(localTime->tm_mon + 1)) + " " + ((String)(localTime->tm_year + 1900));
+    return date;
+  }
+  if(localTime->tm_mday < 10) {
+    date = zero + "" + ((String)localTime->tm_mday) + " " + ((String)(localTime->tm_mon + 1)) + " " + ((String)(localTime->tm_year + 1900));
+    return date;
+  } 
+  if(localTime->tm_mon < 10) {
+    date = ((String)localTime->tm_mday) + " " + zero + "" + ((String)(localTime->tm_mon + 1)) + " " + ((String)(localTime->tm_year + 1900));
+    return date;
+  }
+  if(localTime->tm_mday > 10 && localTime->tm_mon > 10) {
+    date = ((String)localTime->tm_mday) + " " + ((String)(localTime->tm_mon + 1)) + " " + ((String)(localTime->tm_year + 1900));
+    return date;
+  }
+  
+  Serial.print("date : ");Serial.print(date);
+
+  Serial.println();
+}
+
+String getCurrentTime() {
+  struct tm* localTime = getLocalDateTime();
+  String zero = "0";
+  String tim3;
+
+  if(localTime->tm_hour < 10 && localTime->tm_min < 10 && localTime->tm_sec < 10) {
+      tim3 = zero +"" +((String)localTime->tm_hour) + ":" + zero + "" +((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec);
+      return tim3;
+  }
+  if(localTime->tm_hour < 10 && localTime->tm_min < 10) {
+      tim3 = zero +"" +((String)localTime->tm_hour) + ":" + zero + "" +((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec);
+      return tim3;
+  }
+  if(localTime->tm_hour < 10 && localTime->tm_sec < 10) {
+      tim3 = zero +"" +((String)localTime->tm_hour) + ":" +((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec);
+      return tim3;
+  }
+  if(localTime->tm_min < 10 && localTime->tm_sec < 10) {
+     tim3 = ((String)localTime->tm_hour) + ":" + zero + "" + ((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec);
+     return tim3;
+  }
+  if(localTime->tm_sec < 10) {
+    tim3 = ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec);
+    return tim3;
+  } 
+  if (localTime->tm_min < 10) {
+    tim3 = ((String)localTime->tm_hour) + ":" + zero + "" +((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec);
+    return tim3;
+  } 
+  if (localTime->tm_hour < 10) {
+    tim3 = zero + "" + ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec);
+    return tim3;
+  } 
+  if(localTime->tm_sec > 10 && localTime->tm_min > 10 && localTime->tm_hour > 10) {
+    tim3 = ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec);
+    return tim3;
+  }
+
+  Serial.print("time : ");Serial.print(tim3);
+
+  Serial.println();
+}
+
+
+struct tm* getLocalDateTime() {
+  time_t currentTime;
+  struct tm *localTime;
+  time( &currentTime );
+  currentTime -= 2*30*60;
+  localTime= localtime(&currentTime);
+
+  Serial.println(localTime);
+
+  return localTime;
+
 }
