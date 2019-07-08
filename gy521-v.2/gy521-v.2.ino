@@ -66,6 +66,9 @@ double previousX = 0;
 double distance = 0;
 double averageSpeed = 0;
 
+String avgSpeed;
+String dist;
+
 float minimalHighAccX = 0.20;
 float minimalLowAccX = -0.20;
 
@@ -116,8 +119,8 @@ void setup(){
 void loop(){
 
   if(cpt == 0) {
-    dateTime = getCurrentDate();
-    startTime = getCurrentTime();
+    dateTime = "\"datePerformance\" : \"" +  (getCurrentDate() + getCurrentTime()) + "\"" + ",";
+    startTime = "\"startTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"" + ",";
   }
   
   Serial.print("cpt : ");Serial.print(cpt);Serial.print("\n");
@@ -141,13 +144,16 @@ void loop(){
   
     if(cpt >= 20) {
       averageSpeed = averageArray(arraySpeeds, cpt);
+      avgSpeed = "\"speed\" : " + (String)averageSpeed + ",";
+
       distance = currentV * ((millis() - timerStartSession)/1000);
-      
+      dist = "\"distance\" : " + (String)distance + ",";
+
       Serial.print("\nvitesse moyenne : ");Serial.print(currentV);Serial.print("m/s\n");
       Serial.print("Distance moyenne : ");Serial.print(distance); Serial.print("m\n");
 
-      endTime = getCurrentTime();
-      sendToApi(datas, dateTime, startTime, averageSpeed, distance, endTime);
+      endTime = "\"endTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"";
+      sendToApi(datas, dateTime, startTime, avgSpeed, dist, endTime);
       sleep(50);
     }
   }
@@ -213,43 +219,33 @@ String getBeginningDatasFromApi(int deviceId) {
     double session = doc["data"]["performances"][0]["session"];
     String userId = doc["data"]["performances"][0]["user"];
 
-    datas = "lengthType : " + lengthType + ", programType : " + programType + ", session : " + session + ", deviceId : "+ deviceId + ", userId : " + userId;
-
-    //Serial.print("datePerf : ");  Serial.println(datas);
+    datas = "\"lengthType\" : " + lengthType + ", \"programType\" : " + "{" + "\"_id\": " +"\"" + programType + "\"" + "}" +", \"session\" : " + session + ", \"deviceId\" : "+ deviceId + ", \"user\" : " + "\"" + userId + "\"" + ",";
 
     return datas;
   }
 }
 
-void sendToApi(String datas, String dateTime, String startTime, double averageSpeed, double distance, String endTime) {
+void sendToApi(String datas, String dateTime, String startTime, String averageSpeed, String distance, String endTime) {
     HTTPClient http;
 
-    Serial.print("datas : ");Serial.print(datas);
-    Serial.println();
-    Serial.print("dateTime : ");Serial.print(dateTime);
-    Serial.println();
-    Serial.print("startTime : ");Serial.print(startTime);
-    Serial.println();
-    Serial.print("averageSpeed : ");Serial.print(averageSpeed);
-    Serial.println();
-    Serial.print("distance : ");Serial.print(distance);
-    Serial.println();
-    Serial.print("endTime : ");Serial.print(endTime);
-    Serial.println();
-
-
-
     //Change
-   /* http.begin("http://192.168.1.18:3000/performances");
+    http.begin("http://192.168.1.18:3000/performances");
     http.addHeader("Content-Type", "application/json");
 
-    int httpCode = http.POST("{\"performance\" : {\"datePerformance\" : \"1555000960\",\"speed\" : 76,\"lengthType\" : 26,\"startTime\" : \"1555000960\",\"endTime\" : \"1555000960\",\"distance\" : 200,\"lostWeight\" : 47,\"programType\" : {\"_id\": \"5d0e7b075f1af2c6b6b1a00c\"},\"user\" : \"5d0e60621bdcd81d4236e2bc\"}}");
+    String json = "{\"performance\" : {\n" + datas + "\n" + dateTime + "\n" + startTime + "\n" + averageSpeed + "\n" + distance + "\n" + endTime + "\n"+ "}\n}";
+
+    Serial.print("json : ");Serial.print(json);
+
+    int httpCode = http.POST(json);
+
+    Serial.print("json : ");Serial.print(json);
+
     String payload = http.getString();
 
     Serial.println(httpCode);
     Serial.println(payload);
 
-    http.end();*/
+    http.end();
   
 
  
@@ -261,26 +257,23 @@ String getCurrentDate() {
   String zero = "0";
   String date;
 
-  if(localTime->tm_mday < 10 && localTime->tm_mon < 10) {
-    date = zero + "" + ((String)localTime->tm_mday) + " " + zero + "" + ((String)(localTime->tm_mon + 1)) + " " + ((String)(localTime->tm_year + 1900));
+  if(localTime->tm_mon < 10 && localTime->tm_mday < 10) {
+    date = ((String)(localTime->tm_year + 1900) + "-" + zero + "" + ((String)(localTime->tm_mon + 1)) + "-" + zero + "" + ((String)localTime->tm_mday) + "T");
+    return date;
+  }
+  if(localTime->tm_mon < 10) {
+    date = ((String)(localTime->tm_year + 1900) + "-" + zero + "" + ((String)(localTime->tm_mon + 1)) + "-" + ((String)localTime->tm_mday) + "T");
     return date;
   }
   if(localTime->tm_mday < 10) {
-    date = zero + "" + ((String)localTime->tm_mday) + " " + ((String)(localTime->tm_mon + 1)) + " " + ((String)(localTime->tm_year + 1900));
+    date = ((String)(localTime->tm_year + 1900) + "-" + ((String)(localTime->tm_mon + 1)) + "-" + zero + "" + ((String)localTime->tm_mday) + "T");
     return date;
   } 
-  if(localTime->tm_mon < 10) {
-    date = ((String)localTime->tm_mday) + " " + zero + "" + ((String)(localTime->tm_mon + 1)) + " " + ((String)(localTime->tm_year + 1900));
-    return date;
-  }
-  if(localTime->tm_mday > 10 && localTime->tm_mon > 10) {
-    date = ((String)localTime->tm_mday) + " " + ((String)(localTime->tm_mon + 1)) + " " + ((String)(localTime->tm_year + 1900));
-    return date;
-  }
   
-  Serial.print("date : ");Serial.print(date);
-
-  Serial.println();
+  if(localTime->tm_mon > 10 && localTime->tm_mday > 10) {
+    date = ((String)(localTime->tm_year + 1900) + "-" + ((String)(localTime->tm_mon + 1)) + "-" + ((String)localTime->tm_mday) + "T");
+    return date;
+  }
 }
 
 String getCurrentTime() {
@@ -289,41 +282,37 @@ String getCurrentTime() {
   String tim3;
 
   if(localTime->tm_hour < 10 && localTime->tm_min < 10 && localTime->tm_sec < 10) {
-      tim3 = zero +"" +((String)localTime->tm_hour) + ":" + zero + "" +((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec);
+      tim3 = zero +"" +((String)localTime->tm_hour) + ":" + zero + "" +((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec) + ".960Z";
       return tim3;
   }
   if(localTime->tm_hour < 10 && localTime->tm_min < 10) {
-      tim3 = zero +"" +((String)localTime->tm_hour) + ":" + zero + "" +((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec);
+      tim3 = zero +"" +((String)localTime->tm_hour) + ":" + zero + "" +((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec) + ".960Z";
       return tim3;
   }
   if(localTime->tm_hour < 10 && localTime->tm_sec < 10) {
-      tim3 = zero +"" +((String)localTime->tm_hour) + ":" +((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec);
+      tim3 = zero +"" +((String)localTime->tm_hour) + ":" +((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec) + ".960Z";
       return tim3;
   }
   if(localTime->tm_min < 10 && localTime->tm_sec < 10) {
-     tim3 = ((String)localTime->tm_hour) + ":" + zero + "" + ((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec);
+     tim3 = ((String)localTime->tm_hour) + ":" + zero + "" + ((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec) + ".960Z";
      return tim3;
   }
   if(localTime->tm_sec < 10) {
-    tim3 = ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec);
+    tim3 = ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + zero + "" + ((String)localTime->tm_sec) + ".960Z";
     return tim3;
   } 
   if (localTime->tm_min < 10) {
-    tim3 = ((String)localTime->tm_hour) + ":" + zero + "" +((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec);
+    tim3 = ((String)localTime->tm_hour) + ":" + zero + "" +((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec) + ".960Z";
     return tim3;
   } 
   if (localTime->tm_hour < 10) {
-    tim3 = zero + "" + ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec);
+    tim3 = zero + "" + ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec) + ".960Z";
     return tim3;
   } 
   if(localTime->tm_sec > 10 && localTime->tm_min > 10 && localTime->tm_hour > 10) {
-    tim3 = ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec);
+    tim3 = ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec) + ".960Z";
     return tim3;
   }
-
-  Serial.print("time : ");Serial.print(tim3);
-
-  Serial.println();
 }
 
 
