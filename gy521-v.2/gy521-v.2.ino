@@ -75,8 +75,8 @@ String dateTime;
 String startTime;
 String endTime;
 
-const char* ssid = "under-wifi";
-const char* password = "4F3EC76435781E341151852682";
+const char* ssid = "ssid";
+const char* password = "pass";
 
 int addr = 0;
 float savedDatas[3000];
