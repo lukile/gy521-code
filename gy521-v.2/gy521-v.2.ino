@@ -113,14 +113,16 @@ void setup(){
 
   datas = getBeginningDatasFromApi(345);
 
-  sleep(20);
+  sleep(10);
 }
 
 void loop(){
-
+ 
   if(cpt == 0) {
     dateTime = "\"datePerformance\" : \"" +  (getCurrentDate() + getCurrentTime()) + "\"" + ",";
     startTime = "\"startTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"" + ",";
+
+    
   }
   
   Serial.print("cpt : ");Serial.print(cpt);Serial.print("\n");
@@ -313,6 +315,9 @@ String getCurrentTime() {
     tim3 = ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec) + ".960Z";
     return tim3;
   }
+
+  Serial.print("time : ");Serial.print(tim3);
+  Serial.println();
 }
 
 
@@ -322,8 +327,6 @@ struct tm* getLocalDateTime() {
   time( &currentTime );
   currentTime -= 2*30*60;
   localTime= localtime(&currentTime);
-
-  Serial.println(localTime);
 
   return localTime;
 
