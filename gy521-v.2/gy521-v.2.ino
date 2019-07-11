@@ -23,8 +23,8 @@
 #include <WiFiGeneric.h>
 #include <WiFi.h>
 
-#define SDA 33
-#define SCL 32
+//#define SDA 33
+//#define SCL 32
 
 /*
 TO BEGIN 
@@ -50,7 +50,7 @@ Define a session and a deviceId in app
 
 MPU6050 mpu6050(Wire);
 
-
+String device_id = "WDB-0001A";
 int iterator = 0;
 
 long timer = 0;
@@ -78,8 +78,14 @@ String dateTime;
 String startTime;
 String endTime;
 
-const char* ssid = "ssid";
-const char* password = "pass";
+int flagEclairage = 0;
+int firstTimer = 0;
+int lastTimer = 0;
+
+int isPerformanceStart = 0;
+int isWifiStart = 0;
+const char* ssid = "PriseDeLaBastille";
+const char* password = "flow4321";
 
 int addr = 0;
 float savedDatas[3000];
@@ -87,13 +93,19 @@ char jsonTest;
 
 
 
+int PinSeuilLumiere = 2;   // Broche Numérique mesure d'éclairement
+int tension = 0;            // Mesure de tension (valeur élevée si sombre)
+
 void setup(){
   Serial.begin(9600);
-  Wire.begin(SDA, SCL);
-
+  //Wire.begin(SDA, SCL);
+  Wire.begin();
   mpu6050.begin();
   mpu6050.calcGyroOffsets(true);
   timerStartSession = millis();
+
+    pinMode(PinSeuilLumiere, INPUT);
+
   
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -110,53 +122,89 @@ void setup(){
   
   Serial.print("Connected, IP address: \n");
   Serial.println(WiFi.localIP()); 
-
-  datas = getBeginningDatasFromApi(345);
-
-  sleep(10);
 }
 
 void loop(){
+  int eclaire = digitalRead(PinSeuilLumiere); 
+
+  Serial.println(eclaire);
+
+   if(eclaire == 1 && flagEclairage == 0) {
+      flagEclairage = 1;
+      firstTimer = millis();
+      delay(2000);
+  }
+
+  
+  if(eclaire == 0 && flagEclairage == 1) {
+    lastTimer = (millis() - firstTimer) / 1000; // en sec
+    Serial.println(lastTimer);
+    
+    if(lastTimer >= 4 && lastTimer < 10) // start or stop performances
+    {
+      Serial.println("start/stop performance");
+      delay(800);
+      flagEclairage = 0;
+      if(isPerformanceStart == 0) {
+        isPerformanceStart = 1;
+      } else if(isPerformanceStart == 2) {
+        averageSpeed = averageArray(arraySpeeds, cpt);
+        avgSpeed = "\"speed\" : " + (String)averageSpeed + ",";
+  
+        distance = currentV * ((millis() - timerStartSession)/1000);
+        dist = "\"distance\" : " + (String)distance + ",";
+  
+        Serial.print("\nvitesse moyenne : ");Serial.print(currentV);Serial.print("m/s\n");
+        Serial.print("Distance moyenne : ");Serial.print(distance); Serial.print("m\n");
+
+        endTime = "\"endTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"";
+        sendToApi(dateTime, startTime, avgSpeed, dist, endTime);
+        
+        sleep(50);
+      } 
+      
+    } else if(lastTimer >= 10)  // start or stop synchronization Wifi
+    {
+      Serial.println("start/stop wifi");
+      delay(800);
+       if(isWifiStart == 0) {
+        isWifiStart = 1;
+      } else if(isWifiStart == 1) {
+        isWifiStart = 0;
+      }
+      flagEclairage = 0;
+    }else{
+      //flag = 0;
+    }
+  }
+
  
-  if(cpt == 0) {
+  if(isPerformanceStart == 1) {
     dateTime = "\"datePerformance\" : \"" +  (getCurrentDate() + getCurrentTime()) + "\"" + ",";
     startTime = "\"startTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"" + ",";
 
-    
+    isPerformanceStart = 2;
   }
   
-  Serial.print("cpt : ");Serial.print(cpt);Serial.print("\n");
   Serial.print("endSession : ");Serial.print(endSession);Serial.print("\n");
 
-  mpu6050.update();
-  if(mpu6050.getAccX() > minimalHighAccX || mpu6050.getAccX() < minimalLowAccX) {
-    Serial.print("accX > 0.20: "); Serial.print(mpu6050.getAccX());
-    Serial.println("==================================================\n");
-    timer = millis();
- 
-    currentV = previousV + mpu6050.getAccX()* 9.8 * 0.05;
-    currentX = previousX + currentV * 0.05;
-    previousV = currentV;
-    previousX = currentX;
-    arraySpeeds[cpt] = currentV;
-
+  if(isPerformanceStart == 2) {
+    mpu6050.update();
+    if(mpu6050.getAccX() > minimalHighAccX || mpu6050.getAccX() < minimalLowAccX) {
+      Serial.print("accX > 0.20: "); Serial.print(mpu6050.getAccX());
+      Serial.println("==================================================\n");
+      timer = millis();
+   
+      currentV = previousV + mpu6050.getAccX()* 9.8 * 0.05;
+      currentX = previousX + currentV * 0.05;
+      previousV = currentV;
+      previousX = currentX;
+      arraySpeeds[cpt] = currentV;
   
-    Serial.print("vitesse : ");Serial.print(currentV);Serial.print("m/s\n");
-    cpt += 1;
-  
-    if(cpt >= 20) {
-      averageSpeed = averageArray(arraySpeeds, cpt);
-      avgSpeed = "\"speed\" : " + (String)averageSpeed + ",";
+      Serial.print("current vitesse : ");Serial.print(mpu6050.getAccX()*9.8*0.05); Serial.print("m/s");
+      Serial.print("vitesse : ");Serial.print(currentV);Serial.print("m/s\n");
 
-      distance = currentV * ((millis() - timerStartSession)/1000);
-      dist = "\"distance\" : " + (String)distance + ",";
-
-      Serial.print("\nvitesse moyenne : ");Serial.print(currentV);Serial.print("m/s\n");
-      Serial.print("Distance moyenne : ");Serial.print(distance); Serial.print("m\n");
-
-      endTime = "\"endTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"";
-      sendToApi(datas, dateTime, startTime, avgSpeed, dist, endTime);
-      sleep(50);
+      cpt += 1;
     }
   }
   delay(50);
@@ -196,13 +244,13 @@ String getCurrentUserFromApi() {
   }
 }
 
-String getBeginningDatasFromApi(int deviceId) {
+/*String getBeginningDatasFromApi() {
   StaticJsonDocument<600> doc;
 
   if(WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
 
-    http.begin("http://192.168.1.18:3000/performances/device/" + (String)deviceId);
+    http.begin("http://192.168.1.18:3000/performances";
 
     int httpCode = http.GET();
     String payload = http.getString();
@@ -216,25 +264,25 @@ String getBeginningDatasFromApi(int deviceId) {
       return "error";
     }
 
-    String lengthType = doc["data"]["performances"][0]["lengthType"];
-    String programType = doc["data"]["performances"][0]["programType"];
-    double session = doc["data"]["performances"][0]["session"];
+    //String lengthType = doc["data"]["performances"][0]["lengthType"];
+    //String programType = doc["data"]["performances"][0]["programType"];
+    ///double session = doc["data"]["performances"][0]["session"];
     String userId = doc["data"]["performances"][0]["user"];
 
-    datas = "\"lengthType\" : " + lengthType + ", \"programType\" : " + "{" + "\"_id\": " +"\"" + programType + "\"" + "}" +", \"session\" : " + session + ", \"deviceId\" : "+ deviceId + ", \"user\" : " + "\"" + userId + "\"" + ",";
+    datas =  "\"deviceId\" : "+ deviceId + ", \"user\" : " + "\"" + userId + "\"" + ",";
 
     return datas;
   }
-}
+}*/
 
-void sendToApi(String datas, String dateTime, String startTime, String averageSpeed, String distance, String endTime) {
+void sendToApi(String dateTime, String startTime, String averageSpeed, String distance, String endTime) {
     HTTPClient http;
 
     //Change
     http.begin("http://192.168.1.18:3000/performances");
     http.addHeader("Content-Type", "application/json");
 
-    String json = "{\"performance\" : {\n" + datas + "\n" + dateTime + "\n" + startTime + "\n" + averageSpeed + "\n" + distance + "\n" + endTime + "\n"+ "}\n}";
+    String json = "{\"performance\" : { \"deviceId\" : \""+ device_id + "\"" + "," + "\n" + dateTime + "\n" + startTime + "\n" + averageSpeed + "\n" + distance + "\n" + endTime + "\n"+ "}\n}";
 
     Serial.print("json : ");Serial.print(json);
 

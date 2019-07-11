@@ -37,6 +37,7 @@ void loop() {
     previousV = currentV;
     previousX = currentX;
     arraySpeeds[cpt] = currentV;
+    Serial.print("current vitesse : ");Serial.print(mpu6050.getAccX()*9.8*0.05); Serial.print("m/s");
     Serial.print("vitesse : ");Serial.print(currentV); Serial.print("m/s");
     cpt += 1;
     if(cpt >= 30){

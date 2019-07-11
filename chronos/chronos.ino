@@ -1,8 +1,8 @@
 #include <WiFi.h>
 #include <time.h>
 
-const char* ssid = "ssid";
-const char* password = "password";
+const char* ssid = "under-wifi";
+const char* password = "4F3EC76435781E341151852682";
 
 int timezone = 3;
 int dst = 0;
@@ -29,7 +29,15 @@ void setup() {
 }
 
 void loop() {
-  time_t now = time(nullptr);
-  Serial.println(ctime(&now));
+   time_t currentTime;
+    struct tm *localTime;
+    time( &currentTime );
+    currentTime -= 2*30*60;
+    localTime= localtime(&currentTime);
+
+  Serial.println(localTime);
+    
+  //time_t now = localtime(nullptr);
+  //Serial.println(ctime(&now));
   delay(1000);
 }
