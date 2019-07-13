@@ -26,6 +26,7 @@
 MPU6050 mpu6050(Wire);
 
 String device_id = "WDB-0001A";
+String user_id;
 
 long timer = 0;
 long timerStartSession = 0;
@@ -56,8 +57,8 @@ int lastTimer = 0;
 int isPerformanceStart = 0;
 int isWifiStart = 0;
 
-const char* ssid = "ssid";
-const char* password = "pass";
+const char* ssid = "PriseDeLaBastille";
+const char* password = "flow4321";
 
 int PinSeuilLumiere = 2;   // Broche Numérique mesure d'éclairement
 
@@ -123,7 +124,7 @@ void loop(){
 
         endTime = "\"endTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"";
         sendToApi(datePerformance, startTime, averageSpeedJson, distanceJson, endTime);
-        
+        isPerformanceStart = 0; // Arrete les mesures
         sleep(50);
       } 
       
@@ -146,7 +147,7 @@ void loop(){
   if(isPerformanceStart == 1) {
     datePerformance = "\"datePerformance\" : \"" +  (getCurrentDate() + getCurrentTime()) + "\"" + ",";
     startTime = "\"startTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"" + ",";
-
+    user_id = getUserId();
     isPerformanceStart = 2;
   }
   
@@ -201,8 +202,29 @@ void sendToApi(String datePerformance, String startTime, String averageSpeed, St
     Serial.println(payload);
 
     http.end();
- 
-  delay(1000);
+    delay(1000);
+}
+
+
+String getUserId() {
+    HTTPClient http;
+    
+    //Change
+    http.begin("localhost:3000/users/current/deviceId");
+    http.addHeader("x-access", "device_id");
+
+    int httpCode = http.GET();
+
+    Serial.print("http code : ");Serial.print(httpCode);
+
+    String payload = http.getString();
+
+    Serial.print("http code : ");  Serial.print(httpCode);
+    Serial.print(payload);
+
+    http.end();
+    delay(1000);
+    return payload;
 }
 
 String getCurrentDate() {
