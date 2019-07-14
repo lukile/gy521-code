@@ -27,6 +27,7 @@ MPU6050 mpu6050(Wire);
 
 String device_id = "WDB-001A";
 String user_id;
+String user_token;
 
 long timer = 0;
 long timerStartSession = 0;
@@ -185,9 +186,9 @@ void sendToApi(String datePerformance, String startTime, String averageSpeed, St
     HTTPClient http;
 
     //Change
-    http.begin("http://192.168.1.18:3000/performances/"+user_id);
+    http.begin("http://192.168.1.32:3000/performances/"+user_id);
     http.addHeader("Content-Type", "application/json");
-
+    http.addHeader("x-access-deviceid", device_id);
     String json = "{\"performance\" : { \"deviceId\" : \""+ device_id + "\"" + "," + "\n" + datePerformance + "\n" + startTime + "\n" + averageSpeed + "\n" + distance + "\n" + endTime + "\n"+ "}\n}";
 
     Serial.print("json : ");Serial.print(json);
@@ -211,7 +212,7 @@ String getUserId() {
     HTTPClient http;
     
     //Change
-    http.begin("http://192.168.43.186:3000/users/current/deviceId");
+    http.begin("http://192.168.1.32:3000/users/current/deviceId");
     http.addHeader("x-access-deviceid", device_id);
 
     int httpCode = http.GET();
@@ -234,6 +235,8 @@ String getUserId() {
     }
     String userId = doc["data"]["user"]["_id"];
     Serial.print("user_id : ");  Serial.print(userId);
+    //user_token = doc["data"]["token"];
+    //Serial.print("token : ");  Serial.print(user_token);
     return userId;
 }
 
