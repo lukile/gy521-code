@@ -25,6 +25,9 @@
 
 MPU6050 mpu6050(Wire);
 
+int red = 0;
+int green = 4;
+int blue = 16;
 String device_id = "WDB-001A";
 String user_id;
 String user_token;
@@ -66,6 +69,12 @@ int PinSeuilLumiere = 2;   // Broche Numérique mesure d'éclairement
 void setup(){
   Serial.begin(9600);
   //Wire.begin(SDA, SCL);
+  pinMode(blue, OUTPUT);
+  pinMode(red, OUTPUT);
+  pinMode(green, OUTPUT);
+  digitalWrite(blue, LOW);
+  digitalWrite(red, LOW);
+  digitalWrite(green, LOW);
   Wire.begin();
   mpu6050.begin();
   mpu6050.calcGyroOffsets(true);
@@ -113,6 +122,7 @@ void loop(){
       flagEclairage = 0;
       if(isPerformanceStart == 0) {
         isPerformanceStart = 1;
+        digitalWrite(blue, HIGH);
       } else if(isPerformanceStart == 2) {
         averageSpeed = averageArray(arraySpeeds, cpt);
         averageSpeedJson = "\"speed\" : " + (String)averageSpeed + ",";
@@ -126,6 +136,7 @@ void loop(){
         endTime = "\"endTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"";
         sendToApi(datePerformance, startTime, averageSpeedJson, distanceJson, endTime);
         isPerformanceStart = 0; // Arrete les mesures
+        digitalWrite(blue, LOW);
         sleep(50);
       } 
       
@@ -135,8 +146,10 @@ void loop(){
       delay(800);
        if(isWifiStart == 0) {
         isWifiStart = 1;
+        digitalWrite(green, HIGH); // wifi started
       } else if(isWifiStart == 1) {
         isWifiStart = 0;
+        digitalWrite(green, LOW); // wifi stoped
       }
       flagEclairage = 0;
     }else{
