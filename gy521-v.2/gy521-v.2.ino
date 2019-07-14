@@ -25,7 +25,7 @@
 
 MPU6050 mpu6050(Wire);
 
-String device_id = "WDB-0001A";
+String device_id = "WDB-001A";
 String user_id;
 
 long timer = 0;
@@ -185,7 +185,7 @@ void sendToApi(String datePerformance, String startTime, String averageSpeed, St
     HTTPClient http;
 
     //Change
-    http.begin("http://192.168.1.18:3000/performances");
+    http.begin("http://192.168.1.18:3000/performances/"+user_id);
     http.addHeader("Content-Type", "application/json");
 
     String json = "{\"performance\" : { \"deviceId\" : \""+ device_id + "\"" + "," + "\n" + datePerformance + "\n" + startTime + "\n" + averageSpeed + "\n" + distance + "\n" + endTime + "\n"+ "}\n}";
@@ -207,11 +207,12 @@ void sendToApi(String datePerformance, String startTime, String averageSpeed, St
 
 
 String getUserId() {
+   // StaticJsonDocument<600> doc;
     HTTPClient http;
     
     //Change
-    http.begin("localhost:3000/users/current/deviceId");
-    http.addHeader("x-access", "device_id");
+    http.begin("http://192.168.43.186:3000/users/current/deviceId");
+    http.addHeader("x-access-deviceid", device_id);
 
     int httpCode = http.GET();
 
@@ -224,8 +225,19 @@ String getUserId() {
 
     http.end();
     delay(1000);
-    return payload;
+    DynamicJsonDocument doc(1024);
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if (error) {
+      Serial.print(error.c_str());
+      return "error json parsed";
+    }
+    String userId = doc["data"]["user"]["_id"];
+    Serial.print("user_id : ");  Serial.print(userId);
+    return userId;
 }
+
+
 
 String getCurrentDate() {
   struct tm* localTime = getLocalDateTime();
