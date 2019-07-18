@@ -23,6 +23,13 @@
 #include <WiFiGeneric.h>
 #include <WiFi.h>
 
+#include <WebServer.h>     // Replace with WebServer.h for ESP32
+#include <AutoConnect.h>
+
+
+WebServer Server;          // Replace with WebServer for ESP32
+AutoConnect      Portal(Server);
+
 MPU6050 mpu6050(Wire);
 
 int red = 0;
@@ -69,12 +76,12 @@ int PinSeuilLumiere = 2;   // Broche Numérique mesure d'éclairement
 void setup(){
   Serial.begin(9600);
   //Wire.begin(SDA, SCL);
-  pinMode(blue, OUTPUT);
-  pinMode(red, OUTPUT);
-  pinMode(green, OUTPUT);
-  digitalWrite(blue, LOW);
-  digitalWrite(red, LOW);
-  digitalWrite(green, LOW);
+  //pinMode(blue, OUTPUT);
+  //pinMode(red, OUTPUT);
+  //pinMode(green, OUTPUT);
+  //digitalWrite(blue, LOW);
+  //digitalWrite(red, LOW);
+  //digitalWrite(green, LOW);
   Wire.begin();
   mpu6050.begin();
   mpu6050.calcGyroOffsets(true);
@@ -83,7 +90,7 @@ void setup(){
   pinMode(PinSeuilLumiere, INPUT);
 
   
-  /*WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   Serial.print("Connecting\n");
   while (WiFi.status() != WL_CONNECTED) {
@@ -91,18 +98,20 @@ void setup(){
     Serial.print("Waiting for connection...\n");
   }
   
-  Serial.println();*/
+  Serial.println();
 
-  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  //configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
 
   
-  /*Serial.print("Connected, IP address: \n");
-  Serial.println(WiFi.localIP()); */
+  Serial.print("Connected, IP address: \n");
+  Serial.println(WiFi.localIP()); 
 
-  connection();
+  //connection();
 }
 
 void loop(){
+  Portal.handleClient();
+
   int eclaire = digitalRead(PinSeuilLumiere); 
 
   Serial.println(eclaire);
@@ -124,7 +133,7 @@ void loop(){
       flagEclairage = 0;
       if(isPerformanceStart == 0) {
         isPerformanceStart = 1;
-        digitalWrite(blue, HIGH);
+        //digitalWrite(blue, HIGH);
       } else if(isPerformanceStart == 2) {
         averageSpeed = averageArray(arraySpeeds, cpt);
         averageSpeedJson = "\"speed\" : " + (String)averageSpeed + ",";
@@ -138,7 +147,7 @@ void loop(){
         endTime = "\"endTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"";
         sendToApi(datePerformance, startTime, averageSpeedJson, distanceJson, endTime);
         isPerformanceStart = 0; // Arrete les mesures
-        digitalWrite(blue, LOW);
+        //digitalWrite(blue, LOW);
         sleep(50);
       } 
       
@@ -149,11 +158,11 @@ void loop(){
        if(isWifiStart == 0) {
         getWifi();
         isWifiStart = 1;
-        digitalWrite(green, HIGH); // wifi started
+        //digitalWrite(green, HIGH); // wifi started
       } else if(isWifiStart == 1) {
         postWifi();
         isWifiStart = 0;
-        digitalWrite(green, LOW); // wifi stoped
+        //digitalWrite(green, LOW); // wifi stoped
       }
       flagEclairage = 0;
     }else{
@@ -217,7 +226,7 @@ void sendToApi(String datePerformance, String startTime, String averageSpeed, St
     HTTPClient http;
 
     //Change
-    http.begin("http://192.168.1.32:3000/performances/"+user_id);
+    http.begin("https://aqueous-escarpment-35073.herokuapp.com/performances/" + user_id);
     http.addHeader("Content-Type", "application/json");
     http.addHeader("x-access-deviceid", device_id);
     String json = "{\"performance\" : { \"deviceId\" : \""+ device_id + "\"" + "," + "\n" + datePerformance + "\n" + startTime + "\n" + averageSpeed + "\n" + distance + "\n" + endTime + "\n"+ "}\n}";
@@ -243,7 +252,7 @@ String getUserId() {
     HTTPClient http;
     
     //Change
-    http.begin("http://192.168.1.32:3000/users/current/deviceId");
+    http.begin("https://aqueous-escarpment-35073.herokuapp.com/users/current/deviceId");
     http.addHeader("x-access-deviceid", device_id);
 
     int httpCode = http.GET();
