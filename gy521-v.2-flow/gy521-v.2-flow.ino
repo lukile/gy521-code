@@ -26,9 +26,8 @@
 #include <WebServer.h>     // Replace with WebServer.h for ESP32
 #include <AutoConnect.h>
 
-
 WebServer Server;          // Replace with WebServer for ESP32
-AutoConnect      Portal(Server);
+AutoConnect Portal(Server);
 
 MPU6050 mpu6050(Wire);
 
@@ -37,9 +36,7 @@ int green = 4;
 int blue = 16;
 String device_id = "WDB-001A";
 String user_id;
-String user_token;
 
-long timer = 0;
 long timerStartSession = 0;
 double arraySpeeds[1000];
 int cpt = 0;
@@ -68,27 +65,26 @@ int lastTimer = 0;
 int isPerformanceStart = 0;
 int isWifiStart = 0;
 
-const char* ssid = "PriseDeLaBastille";
-const char* password = "flow4321";
+const char* ssid = "ssid";
+const char* password = "pass";
 
 int PinSeuilLumiere = 2;   // Broche Numérique mesure d'éclairement
 
 void setup(){
   Serial.begin(9600);
   //Wire.begin(SDA, SCL);
-  //pinMode(blue, OUTPUT);
-  //pinMode(red, OUTPUT);
-  //pinMode(green, OUTPUT);
-  //digitalWrite(blue, LOW);
-  //digitalWrite(red, LOW);
-  //digitalWrite(green, LOW);
+  pinMode(blue, OUTPUT);
+  pinMode(red, OUTPUT);
+  pinMode(green, OUTPUT);
+  digitalWrite(blue, LOW);
+  digitalWrite(red, LOW);
+  digitalWrite(green, LOW);
   Wire.begin();
   mpu6050.begin();
   mpu6050.calcGyroOffsets(true);
   timerStartSession = millis();
 
   pinMode(PinSeuilLumiere, INPUT);
-
   
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -100,17 +96,21 @@ void setup(){
   
   Serial.println();
 
-  //configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
 
   
   Serial.print("Connected, IP address: \n");
-  Serial.println(WiFi.localIP()); 
+  Serial.println(WiFi.localIP());
 
-  //connection();
+  connection();
+
+  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  
+  Serial.print("connection established");Serial.println();
 }
 
 void loop(){
-  Portal.handleClient();
+  //Portal.handleClient();
 
   int eclaire = digitalRead(PinSeuilLumiere); 
 
@@ -133,7 +133,7 @@ void loop(){
       flagEclairage = 0;
       if(isPerformanceStart == 0) {
         isPerformanceStart = 1;
-        //digitalWrite(blue, HIGH);
+        digitalWrite(blue, HIGH);
       } else if(isPerformanceStart == 2) {
         averageSpeed = averageArray(arraySpeeds, cpt);
         averageSpeedJson = "\"speed\" : " + (String)averageSpeed + ",";
@@ -147,8 +147,8 @@ void loop(){
         endTime = "\"endTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"";
         sendToApi(datePerformance, startTime, averageSpeedJson, distanceJson, endTime);
         isPerformanceStart = 0; // Arrete les mesures
-        //digitalWrite(blue, LOW);
-        sleep(50);
+        digitalWrite(blue, LOW);
+        //sleep(50);
       } 
       
     } else if(lastTimer >= 6)  // start or stop synchronization Wifi
@@ -158,11 +158,11 @@ void loop(){
        if(isWifiStart == 0) {
         getWifi();
         isWifiStart = 1;
-        //digitalWrite(green, HIGH); // wifi started
+        digitalWrite(green, HIGH); // wifi started
       } else if(isWifiStart == 1) {
         postWifi();
         isWifiStart = 0;
-        //digitalWrite(green, LOW); // wifi stoped
+        digitalWrite(green, LOW); // wifi stoped
       }
       flagEclairage = 0;
     }else{
@@ -183,7 +183,6 @@ void loop(){
     if(mpu6050.getAccY() > minimalHighAccY || mpu6050.getAccY() < minimalLowAccY) {
       Serial.print("accY > 0.20: "); Serial.print(mpu6050.getAccY());
       Serial.println("==================================================\n");
-      timer = millis();
    
       currentV = previousV + mpu6050.getAccY()* 9.8 * 0.05;
       currentY = previousY + currentV * 0.05;
@@ -216,7 +215,7 @@ void connection() {
 
 double averageArray(double *array, int arraySize) {
   double sum = 0;
-  for (int i = 0; i < arraySize; i++) {
+  for (int i = 0; i < arraySize; i++) { 
     sum += array[i];
   }
   return ((double) sum) / arraySize;
@@ -275,8 +274,6 @@ String getUserId() {
     }
     String userId = doc["data"]["user"]["_id"];
     Serial.print("user_id : ");  Serial.print(userId);
-    //user_token = doc["data"]["token"];
-    //Serial.print("token : ");  Serial.print(user_token);
     return userId;
 }
 
@@ -339,10 +336,13 @@ String getCurrentTime() {
     tim3 = zero + "" + ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec) + ".960Z";
     return tim3;
   } 
-  if(localTime->tm_sec > 10 && localTime->tm_min > 10 && localTime->tm_hour > 10) {
+  if(localTime->tm_sec >= 10 && localTime->tm_min >= 10 && localTime->tm_hour >= 10) {
     tim3 = ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec) + ".960Z";
     return tim3;
   }
+
+  Serial.print("localTime : ");Serial.print(localTime);
+  Serial.println();
 
   Serial.print("time : ");Serial.print(tim3);
   Serial.println();
