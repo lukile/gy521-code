@@ -27,15 +27,17 @@ void rootPage() {
 
 void setup() {
   delay(1000);
-  Serial.begin(115200);
+  Serial.begin(9600);
+  //WiFi.disconnect(false,true);
   Serial.println();
 
   Server.on("/", rootPage);
+   Portal.handleClient();
   if (Portal.begin()) {
     Serial.println("WiFi connected: " + WiFi.localIP().toString());
   }
 }
 
 void loop() {
-    Portal.handleClient();
+  Portal.handleClient();
 }

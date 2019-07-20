@@ -25,15 +25,13 @@
 
 #include <WebServer.h>     // Replace with WebServer.h for ESP32
 #include <AutoConnect.h>
+#include "config2.h"
 
 WebServer Server;          // Replace with WebServer for ESP32
 AutoConnect Portal(Server);
 
 MPU6050 mpu6050(Wire);
 
-int red = 0;
-int green = 4;
-int blue = 16;
 String device_id = "WDB-001A";
 String user_id;
 
@@ -65,21 +63,25 @@ int lastTimer = 0;
 int isPerformanceStart = 0;
 int isWifiStart = 0;
 
-const char* ssid = "ssid";
-const char* password = "pass";
+const char* ssid = "PriseDeLaBastille";
+const char* password = "flow4321";
 
-int PinSeuilLumiere = 2;   // Broche Numérique mesure d'éclairement
-
+int eclaire;
+int valueLumiere;
 void setup(){
   Serial.begin(9600);
   //Wire.begin(SDA, SCL);
   pinMode(blue, OUTPUT);
   pinMode(red, OUTPUT);
   pinMode(green, OUTPUT);
-  digitalWrite(blue, LOW);
   digitalWrite(red, LOW);
+  digitalWrite(blue, LOW);
   digitalWrite(green, LOW);
-  Wire.begin();
+  if(CONFIG == 1) {
+      Wire.begin(SDA, SCL);
+  } else {
+      Wire.begin();
+  }
   mpu6050.begin();
   mpu6050.calcGyroOffsets(true);
   timerStartSession = millis();
@@ -89,30 +91,33 @@ void setup(){
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   Serial.print("Connecting\n");
+  
+  digitalWrite(red, HIGH);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print("Waiting for connection...\n");
   }
-  
+  digitalWrite(red, LOW);
+
   Serial.println();
 
-  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+ // configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
 
   
   Serial.print("Connected, IP address: \n");
   Serial.println(WiFi.localIP());
 
-  connection();
+  //connection();
 
   configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
   
-  Serial.print("connection established");Serial.println();
+  //Serial.print("connection established");Serial.println();
+  
 }
 
 void loop(){
-  //Portal.handleClient();
 
-  int eclaire = digitalRead(PinSeuilLumiere); 
+  eclaire = digitalRead(PinSeuilLumiere);
 
   Serial.println(eclaire);
 
@@ -145,7 +150,7 @@ void loop(){
         Serial.print("Distance moyenne : ");Serial.print(distance); Serial.print("m\n");
 
         endTime = "\"endTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"";
-        sendToApi(datePerformance, startTime, averageSpeedJson, distanceJson, endTime);
+        //sendToApi(datePerformance, startTime, averageSpeedJson, distanceJson, endTime);
         isPerformanceStart = 0; // Arrete les mesures
         digitalWrite(blue, LOW);
         //sleep(50);
@@ -156,10 +161,12 @@ void loop(){
       Serial.println("start/stop wifi");
       delay(800);
        if(isWifiStart == 0) {
+        digitalWrite(green, HIGH); // wifi started
         getWifi();
         isWifiStart = 1;
-        digitalWrite(green, HIGH); // wifi started
+        digitalWrite(green, LOW); // wifi stoped
       } else if(isWifiStart == 1) {
+        digitalWrite(green, HIGH); // wifi started
         postWifi();
         isWifiStart = 0;
         digitalWrite(green, LOW); // wifi stoped
@@ -174,7 +181,7 @@ void loop(){
   if(isPerformanceStart == 1) {
     datePerformance = "\"datePerformance\" : \"" +  (getCurrentDate() + getCurrentTime()) + "\"" + ",";
     startTime = "\"startTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"" + ",";
-    user_id = getUserId();
+    //user_id = getUserId();
     isPerformanceStart = 2;
   }
   
@@ -197,6 +204,7 @@ void loop(){
     }
   }
   delay(50);
+  
 }
 
 void getWifi() {
