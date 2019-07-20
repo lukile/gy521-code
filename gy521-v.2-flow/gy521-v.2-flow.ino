@@ -22,13 +22,7 @@
 #include <WiFiAP.h>
 #include <WiFiGeneric.h>
 #include <WiFi.h>
-
-#include <WebServer.h>     // Replace with WebServer.h for ESP32
-#include <AutoConnect.h>
 #include "config2.h"
-
-WebServer Server;          // Replace with WebServer for ESP32
-AutoConnect Portal(Server);
 
 MPU6050 mpu6050(Wire);
 
@@ -56,7 +50,7 @@ String datePerformance;
 String startTime;
 String endTime;
 
-int flagEclairage = 0;
+int flagLight = 0;
 int firstTimer = 0;
 int lastTimer = 0;
 
@@ -66,8 +60,8 @@ int isWifiStart = 0;
 const char* ssid = "PriseDeLaBastille";
 const char* password = "flow4321";
 
-int eclaire;
-int valueLumiere;
+int light;
+
 void setup(){
   Serial.begin(9600);
   //Wire.begin(SDA, SCL);
@@ -101,33 +95,26 @@ void setup(){
 
   Serial.println();
 
- // configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-
-  
   Serial.print("Connected, IP address: \n");
   Serial.println(WiFi.localIP());
 
-  //connection();
 
   configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-  
-  //Serial.print("connection established");Serial.println();
-  
 }
 
 void loop(){
 
-  eclaire = digitalRead(PinSeuilLumiere);
+  light = digitalRead(PinSeuilLumiere);
 
-  Serial.println(eclaire);
+  Serial.println(light);
 
-   if(eclaire == 1 && flagEclairage == 0) {
-      flagEclairage = 1;
+   if(light == 1 && flagLight == 0) {
+      flagLight = 1;
       firstTimer = millis();
       delay(2000);
   }
   
-  if(eclaire == 0 && flagEclairage == 1) {
+  if(light == 0 && flagLight == 1) {
     lastTimer = (millis() - firstTimer) / 1000; // en sec
     Serial.println(lastTimer);
     
@@ -135,7 +122,7 @@ void loop(){
     {
       Serial.println("start/stop performance");
       delay(800);
-      flagEclairage = 0;
+      flagLight = 0;
       if(isPerformanceStart == 0) {
         isPerformanceStart = 1;
         digitalWrite(blue, HIGH);
@@ -171,9 +158,7 @@ void loop(){
         isWifiStart = 0;
         digitalWrite(green, LOW); // wifi stoped
       }
-      flagEclairage = 0;
-    }else{
-      //flag = 0;
+      flagLight = 0;
     }
   }
 
@@ -181,7 +166,6 @@ void loop(){
   if(isPerformanceStart == 1) {
     datePerformance = "\"datePerformance\" : \"" +  (getCurrentDate() + getCurrentTime()) + "\"" + ",";
     startTime = "\"startTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"" + ",";
-    //user_id = getUserId();
     isPerformanceStart = 2;
   }
   
@@ -204,7 +188,6 @@ void loop(){
     }
   }
   delay(50);
-  
 }
 
 void getWifi() {
@@ -215,11 +198,6 @@ void postWifi() {
   sendToApi(datePerformance, startTime, averageSpeedJson, distanceJson, endTime);
 }
 
-void connection() {
-  if (Portal.begin()) {
-    Serial.println("WiFi connected: " + WiFi.localIP().toString());
-  }
-}
 
 double averageArray(double *array, int arraySize) {
   double sum = 0;
@@ -253,7 +231,6 @@ void sendToApi(String datePerformance, String startTime, String averageSpeed, St
     delay(1000);
 }
 
-
 String getUserId() {
    // StaticJsonDocument<600> doc;
     HTTPClient http;
@@ -284,8 +261,6 @@ String getUserId() {
     Serial.print("user_id : ");  Serial.print(userId);
     return userId;
 }
-
-
 
 String getCurrentDate() {
   struct tm* localTime = getLocalDateTime();
@@ -348,9 +323,6 @@ String getCurrentTime() {
     tim3 = ((String)localTime->tm_hour) + ":" + ((String)localTime->tm_min) + ":" + ((String)localTime->tm_sec) + ".960Z";
     return tim3;
   }
-
-  Serial.print("localTime : ");Serial.print(localTime);
-  Serial.println();
 
   Serial.print("time : ");Serial.print(tim3);
   Serial.println();
