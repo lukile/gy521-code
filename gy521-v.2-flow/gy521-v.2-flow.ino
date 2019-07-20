@@ -22,7 +22,7 @@
 #include <WiFiAP.h>
 #include <WiFiGeneric.h>
 #include <WiFi.h>
-#include "config2.h"
+#include "config1.h"
 
 MPU6050 mpu6050(Wire);
 
@@ -33,9 +33,9 @@ long timerStartSession = 0;
 double arraySpeeds[1000];
 int cpt = 0;
 double currentV = 0;
-double currentY = 0;
+double currentX = 0;
 double previousV = 0;
-double previousY = 0;
+double previousX = 0;
 
 double distance = 0;
 double averageSpeed = 0;
@@ -43,8 +43,8 @@ double averageSpeed = 0;
 String averageSpeedJson;
 String distanceJson;
 
-float minimalHighAccY = 0.20;
-float minimalLowAccY = -0.20;
+float minimalHighAccX = 0.20;
+float minimalLowAccX = -0.20;
 
 String datePerformance;
 String startTime;
@@ -86,12 +86,7 @@ void setup(){
   WiFi.begin(ssid, password);
   Serial.print("Connecting\n");
   
-  digitalWrite(red, HIGH);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print("Waiting for connection...\n");
-  }
-  digitalWrite(red, LOW);
+  connectToWifi();
 
   Serial.println();
 
@@ -137,10 +132,8 @@ void loop(){
         Serial.print("Distance moyenne : ");Serial.print(distance); Serial.print("m\n");
 
         endTime = "\"endTime\" : \"" + (getCurrentDate() + getCurrentTime()) + "\"";
-        //sendToApi(datePerformance, startTime, averageSpeedJson, distanceJson, endTime);
         isPerformanceStart = 0; // Arrete les mesures
         digitalWrite(blue, LOW);
-        //sleep(50);
       } 
       
     } else if(lastTimer >= 6)  // start or stop synchronization Wifi
@@ -149,12 +142,12 @@ void loop(){
       delay(800);
        if(isWifiStart == 0) {
         digitalWrite(green, HIGH); // wifi started
-        getWifi();
+        user_id = getUserId();
         isWifiStart = 1;
         digitalWrite(green, LOW); // wifi stoped
       } else if(isWifiStart == 1) {
         digitalWrite(green, HIGH); // wifi started
-        postWifi();
+        sendToApi(datePerformance, startTime, averageSpeedJson, distanceJson, endTime);
         isWifiStart = 0;
         digitalWrite(green, LOW); // wifi stoped
       }
@@ -171,17 +164,17 @@ void loop(){
   
   if(isPerformanceStart == 2) {
     mpu6050.update();
-    if(mpu6050.getAccY() > minimalHighAccY || mpu6050.getAccY() < minimalLowAccY) {
-      Serial.print("accY > 0.20: "); Serial.print(mpu6050.getAccY());
+    if(mpu6050.getAccX() > minimalHighAccX || mpu6050.getAccX() < minimalLowAccX) {
+      Serial.print("accY > 0.20: "); Serial.print(mpu6050.getAccX());
       Serial.println("==================================================\n");
    
-      currentV = previousV + mpu6050.getAccY()* 9.8 * 0.05;
-      currentY = previousY + currentV * 0.05;
+      currentV = previousV + mpu6050.getAccX()* 9.8 * 0.05;
+      currentX = previousX + currentV * 0.05;
       previousV = currentV;
-      previousY = currentY;
+      previousX = currentX;
       arraySpeeds[cpt] = currentV;
   
-      Serial.print("current vitesse : ");Serial.print(mpu6050.getAccY()*9.8*0.05); Serial.print("m/s");
+      Serial.print("current vitesse : ");Serial.print(mpu6050.getAccX()*9.8*0.05); Serial.print("m/s");
       Serial.print("vitesse : ");Serial.print(currentV);Serial.print("m/s\n");
 
       cpt += 1;
@@ -190,14 +183,14 @@ void loop(){
   delay(50);
 }
 
-void getWifi() {
-  user_id = getUserId();
+void connectToWifi() {
+  digitalWrite(red, HIGH);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print("Waiting for connection...\n");
+  }
+  digitalWrite(red, LOW);
 }
-
-void postWifi() {
-  sendToApi(datePerformance, startTime, averageSpeedJson, distanceJson, endTime);
-}
-
 
 double averageArray(double *array, int arraySize) {
   double sum = 0;
@@ -208,6 +201,8 @@ double averageArray(double *array, int arraySize) {
 }
 
 void sendToApi(String datePerformance, String startTime, String averageSpeed, String distance, String endTime) {
+    connectToWifi();
+  
     HTTPClient http;
 
     //Change
@@ -232,7 +227,8 @@ void sendToApi(String datePerformance, String startTime, String averageSpeed, St
 }
 
 String getUserId() {
-   // StaticJsonDocument<600> doc;
+    connectToWifi();
+
     HTTPClient http;
     
     //Change
